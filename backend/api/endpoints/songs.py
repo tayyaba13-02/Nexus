@@ -65,7 +65,7 @@ async def get_song(song_id: str):
             return FileResponse(os.path.join(UPLOAD_DIR, f))
     raise HTTPException(status_code=404, detail="Song not found")
 
-@router.get("/")
+@router.get("")
 async def list_songs(x_user_id: Optional[str] = Header(None)):
     # Filter by owner_id if provided
     if x_user_id:
@@ -87,20 +87,7 @@ async def delete_song(id: str, x_user_id: Optional[str] = Header(None)):
     
     await song.delete()
 
-@router.delete("/{id}", status_code=204)
-async def delete_song(id: str):
-    song = await Song.get(id)
-    if not song:
-        raise HTTPException(status_code=404, detail="Song not found")
-    
-    # Optional: Delete the actual file from storage
-    # from pathlib import Path
-    # file_path = Path("uploaded_songs") / song.filename
-    # if file_path.exists():
-    #    file_path.unlink()
-    
-    await song.delete()
-    return {"message": "Song deleted"}
+
 
 @router.get("/moods/{mood}")
 async def get_songs_by_mood(mood: str, x_user_id: Optional[str] = Header(None)):
