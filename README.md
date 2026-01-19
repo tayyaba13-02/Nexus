@@ -1,3 +1,13 @@
+---
+title: Nexus Music Player
+emoji: 🎵
+colorFrom: green
+colorTo: emerald
+sdk: docker
+pinned: false
+app_port: 7860
+---
+
 # Nexus Music 
 
 Nexus is a premium, high-performance music streaming application with a sleek **Emerald Design System**. Built with FastAPI and React, it offers a fast, modern, and cloud-native experience for managing your personal music collection without the need for traditional accounts.
