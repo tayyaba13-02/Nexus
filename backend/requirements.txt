@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+python-multipart
+yt-dlp
+youtube-search-python
+mutagen
+pydantic
+pydantic-settings
