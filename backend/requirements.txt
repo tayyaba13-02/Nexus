@@ -6,3 +6,5 @@ youtube-search-python
 mutagen
 pydantic
 pydantic-settings
+beanie
+motor
