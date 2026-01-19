@@ -65,7 +65,8 @@ async def get_song(song_id: str):
             return FileResponse(os.path.join(UPLOAD_DIR, f))
     raise HTTPException(status_code=404, detail="Song not found")
 
-@router.get("")
+@router.get("", response_model=List[Song])
+@router.get("/", response_model=List[Song], include_in_schema=False)
 async def list_songs(x_user_id: Optional[str] = Header(None)):
     # Filter by owner_id if provided
     if x_user_id:
