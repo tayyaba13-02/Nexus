@@ -9,3 +9,4 @@ pydantic-settings
 beanie
 motor
 dnspython
+requests
