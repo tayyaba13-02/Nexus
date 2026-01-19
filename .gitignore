@@ -23,6 +23,15 @@ backend/uploaded_songs/*
 .DS_Store
 Thumbs.db
 
+# Media & Binary Assets (Ignored for Hugging Face)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.webp
+*.svg
+
 # IDE
 .vscode/
 .idea/
