@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Emerald Primitive Scale (#268168 as base) */
+    --emerald-50: #f0fdf4;
+    --emerald-100: #dcfce7;
+    --emerald-200: #bbf7d0;
+    --emerald-300: #86efac;
+    --emerald-400: #4ade80;
+    --emerald-500: #268168;
+    /* Core Brand Color */
+    --emerald-600: #1d6a54;
+    --emerald-700: #165241;
+    --emerald-800: #103f32;
+    --emerald-900: #0d3128;
+    --emerald-950: #061914;
+
+    /* Semantic Tokens */
+    --brand-primary: var(--emerald-500);
+    --brand-dark: var(--emerald-600);
+    --brand-light: var(--emerald-400);
+    --brand-surface: #0a1210;
+    --brand-surface-light: #111d1a;
+  }
+
+  body {
+    @apply text-emerald-50 antialiased;
+    background-color: var(--brand-surface);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+@layer utilities {
+  .bg-brand-gradient {
+    @apply bg-gradient-to-br from-[#268168] to-teal-700;
+  }
+
+  .text-brand-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#268168] to-emerald-400;
+  }
+
+  .border-brand {
+    border-color: rgba(38, 129, 104, 0.2);
+  }
+}
