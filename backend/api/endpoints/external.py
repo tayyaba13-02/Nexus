@@ -13,36 +13,29 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 @router.get("/search")
 async def search_external(q: str = Query(..., min_length=1)):
     """
-    Search YouTube for videos using yt-dlp.
+    Search YouTube for videos using youtube-search-python.
     """
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'noplaylist': True,
-        'quiet': True,
-        'extract_flat': True,
-        'force_generic_extractor': False,
-        'force_ipv4': True,
-    }
-    
     try:
-        search_query = f"ytsearch10:{q}"
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            results = ydl.extract_info(search_query, download=False)
-            
-            formatted_results = []
-            if 'entries' in results:
-                for entry in results['entries']:
-                    if not entry: continue
-                    formatted_results.append({
-                        "id": entry.get('id'),
-                        "title": entry.get('title'),
-                        "thumbnails": [{"url": entry.get('thumbnails', [{}])[0].get('url')} if entry.get('thumbnails') else {"url": ""}],
-                        "duration": str(int(entry.get('duration', 0) // 60)) + ":" + str(int(entry.get('duration', 0) % 60)).zfill(2) if entry.get('duration') else "0:00",
-                        "channel": entry.get('uploader', 'Unknown Channel'),
-                        "link": f"https://www.youtube.com/watch?v={entry.get('id')}"
-                    })
-            
-            return {"results": formatted_results}
+        from youtubesearchpython import VideosSearch
+        videos_search = VideosSearch(q, limit=10)
+        results = videos_search.result()
+
+        formatted_results = []
+        if 'result' in results:
+            for entry in results['result']:
+                formatted_results.append({
+                    "id": entry.get('id'),
+                    "title": entry.get('title'),
+                    "thumbnails": [{"url": entry.get('thumbnails', [{}])[0].get('url')} if entry.get('thumbnails') else {"url": ""}],
+                    "duration": entry.get('duration'),
+                    "channel": entry.get('channel', {}).get('name', 'Unknown Channel'),
+                    "link": entry.get('link')
+                })
+        
+        return {"results": formatted_results}
+    except Exception as e:
+        print(f"Search error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         print(f"Search error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
