@@ -1,12 +1,4 @@
 from fastapi import FastAPI
-import socket
-
-# Global IPv4 Patch for container environments with broken IPv6 DNS
-old_getaddrinfo = socket.getaddrinfo
-def new_getaddrinfo(*args, **kwargs):
-    responses = old_getaddrinfo(*args, **kwargs)
-    return [response for response in responses if response[0] == socket.AF_INET]
-socket.getaddrinfo = new_getaddrinfo
 
 from fastapi.middleware.cors import CORSMiddleware
 from api.endpoints import songs, playlists, search

@@ -10,3 +10,4 @@ beanie
 motor
 dnspython
 requests
+ytmusicapi

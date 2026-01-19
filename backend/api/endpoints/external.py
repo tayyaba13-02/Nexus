@@ -13,36 +13,33 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 @router.get("/search")
 async def search_external(q: str = Query(..., min_length=1)):
     """
-    Search YouTube for videos using yt-dlp.
+    Search YouTube for videos using ytmusicapi.
     """
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'noplaylist': True,
-        'quiet': True,
-        'extract_flat': True,
-        'force_generic_extractor': False,
-        'force_ipv4': True,
-    }
-    
     try:
-        search_query = f"ytsearch10:{q}"
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            results = ydl.extract_info(search_query, download=False)
+        from ytmusicapi import YTMusic
+        yt = YTMusic()
+        results = yt.search(q, filter="songs")
+        
+        formatted_results = []
+        for entry in results:
+            # Safe extraction of artist
+            artists = entry.get('artists', [])
+            artist_name = artists[0]['name'] if artists else "Unknown Artist"
             
-            formatted_results = []
-            if 'entries' in results:
-                for entry in results['entries']:
-                    if not entry: continue
-                    formatted_results.append({
-                        "id": entry.get('id'),
-                        "title": entry.get('title'),
-                        "thumbnails": [{"url": entry.get('thumbnails', [{}])[0].get('url')} if entry.get('thumbnails') else {"url": ""}],
-                        "duration": str(int(entry.get('duration', 0) // 60)) + ":" + str(int(entry.get('duration', 0) % 60)).zfill(2) if entry.get('duration') else "0:00",
-                        "channel": entry.get('uploader', 'Unknown Channel'),
-                        "link": f"https://www.youtube.com/watch?v={entry.get('id')}"
-                    })
+            # Safe extraction of thumbnails
+            thumbnails = entry.get('thumbnails', [])
+            thumbnail_url = thumbnails[-1]['url'] if thumbnails else ""
             
-            return {"results": formatted_results}
+            formatted_results.append({
+                "id": entry.get('videoId'),
+                "title": entry.get('title'),
+                "thumbnails": [{"url": thumbnail_url}],
+                "duration": entry.get('duration', "0:00"),
+                "channel": artist_name,
+                "link": f"https://www.youtube.com/watch?v={entry.get('videoId')}"
+            })
+            
+        return {"results": formatted_results}
     except Exception as e:
         print(f"Search error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
