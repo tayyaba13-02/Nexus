@@ -9,7 +9,7 @@ class CreatePlaylist(BaseModel):
     name: str
     description: str = None
 
-@router.post("/", response_model=Playlist, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=Playlist, status_code=status.HTTP_201_CREATED)
 async def create_playlist(playlist_data: CreatePlaylist, x_user_id: Optional[str] = Header(None)):
     playlist = Playlist(
         name=playlist_data.name, 
@@ -19,7 +19,7 @@ async def create_playlist(playlist_data: CreatePlaylist, x_user_id: Optional[str
     await playlist.insert()
     return playlist
 
-@router.get("/", response_model=List[Playlist])
+@router.get("", response_model=List[Playlist])
 async def get_playlists(x_user_id: Optional[str] = Header(None)):
     if x_user_id:
         return await Playlist.find(Playlist.owner_id == x_user_id).to_list()
