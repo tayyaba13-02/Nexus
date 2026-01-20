@@ -10,17 +10,22 @@ RUN npm run build
 FROM python:3.10-slim
 WORKDIR /app
 
-# Install ffmpeg and modern Node.js (v20) for yt-dlp signature solving
+# Install ffmpeg, curl, and Node.js
 RUN apt-get update && apt-get install -y ffmpeg curl && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 
+# Install Deno as an alternative JS runtime for yt-dlp
+RUN curl -fsSL https://deno.land/x/install/install.sh | sh
+ENV DENO_INSTALL="/root/.deno"
+ENV PATH="$DENO_INSTALL/bin:$PATH"
+
 # Copy backend requirements and install
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-# Explicitly upgrade yt-dlp to the latest version to fix bot detection
-RUN pip install --no-cache-dir -U yt-dlp
+# Use the ABSOLUTE LATEST version of yt-dlp from GitHub to get latest anti-bot fixes
+RUN pip install --no-cache-dir -U git+https://github.com/yt-dlp/yt-dlp.git
 
 # Copy backend code
 COPY backend/ ./

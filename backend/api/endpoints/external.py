@@ -62,35 +62,38 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
             f.write(cookies_content)
 
     # List of client types and stealth settings to try
-    # When cookies are present, we prioritize clients that support them (web, mweb)
+    # Expanded list to cover every possible fallback
     if cookie_file:
         clients_to_try = [
-            {'client': ['web'], 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'},
-            {'client': ['mweb'], 'ua': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36'},
-            {'client': ['tv_embedded'], 'ua': 'Mozilla/5.0 (SMART-TV; Linux; Tizen 5.0) AppleWebkit/537.36 (KHTML, like Gecko) SamsungBrowser/2.2 Chrome/63.0.3239.111 TV Safari/537.36'}
+            {'client': ['web'], 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'},
+            {'client': ['mweb'], 'ua': 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36'},
+            {'client': ['tv_embedded'], 'ua': 'Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0) AppleWebkit/537.36 (KHTML, like Gecko) SamsungBrowser/4.0 Chrome/88.0.4324.182 TV Safari/537.36'},
+            {'client': ['android_music'], 'ua': 'com.google.android.apps.youtube.music/6.41.52 (Linux; U; Android 14; en_US; Pixel 8 Pro; Build/UQ1A.240205.004)'}
         ]
     else:
         clients_to_try = [
-            {'client': ['tv_embedded'], 'ua': 'Mozilla/5.0 (SMART-TV; Linux; Tizen 5.0) AppleWebkit/537.36 (KHTML, like Gecko) SamsungBrowser/2.2 Chrome/63.0.3239.111 TV Safari/537.36'},
-            {'client': ['ios'], 'ua': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1'},
-            {'client': ['android'], 'ua': 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36'},
-            {'client': ['web_embedded'], 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'},
-            {'client': ['mweb'], 'ua': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36'}
+            {'client': ['tv_embedded'], 'ua': 'Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0) AppleWebkit/537.36 (KHTML, like Gecko) SamsungBrowser/4.0 Chrome/88.0.4324.182 TV Safari/537.36'},
+            {'client': ['android_music'], 'ua': 'com.google.android.apps.youtube.music/6.41.52 (Linux; U; Android 14; en_US; Pixel 8 Pro; Build/UQ1A.240205.004)'},
+            {'client': ['ios'], 'ua': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'},
+            {'client': ['android'], 'ua': 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36'},
+            {'client': ['web_embedded'], 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'}
         ]
     
     last_error = None
     for attempt, config in enumerate(clients_to_try):
-        # Stealth Jitter: Wait slightly before retrying to look less like a bot
         if attempt > 0:
-            time.sleep(random.uniform(2.0, 5.0))
+            # Random jitter to prevent IP ban
+            time.sleep(random.uniform(3.0, 7.0))
 
         ydl_opts = {
             'format': 'bestaudio/best',
             'outtmpl': output_template,
             'noplaylist': True,
             'quiet': True,
+            'verbose': True, # Add logs for cleaner debugging in HF Space
             'force_ipv4': True,
             'nocheckcertificate': True,
+            'rm_cachedir': True, # Clear cache for every attempt
             'extractor_args': {'youtube': {'player_client': config['client']}},
             'referer': 'https://www.youtube.com/',
             'http_headers': {
@@ -104,11 +107,9 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
             ydl_opts['cookiefile'] = cookie_file
             
         try:
-            # print(f"DEBUG: Attempting stealth import {attempt+1} with {config['client']}...")
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                # We use extract_info directly with download=True
                 info = ydl.extract_info(video_url, download=True)
-                # ... [Rest of logic follows if successful]
-                filename = ydl.prepare_filename(info)
                 
                 actual_filename = None
                 for f in os.listdir(UPLOAD_DIR):
@@ -117,7 +118,7 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
                         break
                 
                 if not actual_filename:
-                    continue # Try next client if file not found locally
+                    continue
                     
                 duration = info.get('duration')
                 title = info.get('title', 'Unknown External Track')
@@ -139,15 +140,10 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
                 
         except Exception as e:
             last_error = e
-            error_str = str(e).lower()
-            if "sign in to confirm you’re not a bot" in error_str or "bot" in error_str:
-                continue
-            else:
-                continue # Try other clients for any error to be robust
+            print(f"DEBUG: Attempt {attempt+1} ({config['client']}) failed: {str(e)[:200]}")
+            # Continue to next client for ANY error
+            continue
 
-    # If all clients failed
-    error_msg = str(last_error) if last_error else "Unknown error"
-    print(f"Final Import failure: {error_msg}")
-    
-    user_help = " YouTube is blocking the server. Please add your YOUTUBE_COOKIES secret in Settings (see walkthrough)."
-    raise HTTPException(status_code=500, detail=f"Import failed after trying 5 methods: {error_msg}. {user_help}")
+    # Final Failure Message
+    error_msg = str(last_error) if last_error else "All download methods exhausted."
+    raise HTTPException(status_code=500, detail=f"Import blocked by YouTube: {error_msg}. Please ensure your YOUTUBE_COOKIES secret is up-to-date in Settings.")
