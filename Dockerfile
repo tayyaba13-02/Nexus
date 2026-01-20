@@ -10,8 +10,8 @@ RUN npm run build
 FROM python:3.10-slim
 WORKDIR /app
 
-# Install ffmpeg, curl, and Node.js
-RUN apt-get update && apt-get install -y ffmpeg curl unzip && \
+# Install ffmpeg, curl, unzip, and git
+RUN apt-get update && apt-get install -y ffmpeg curl unzip git && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
