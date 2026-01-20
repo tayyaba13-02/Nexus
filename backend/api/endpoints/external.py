@@ -3,6 +3,8 @@ from typing import List, Dict, Any, Optional
 import yt_dlp
 import os
 import uuid
+import time
+import random
 from models.song import Song
 
 router = APIRouter()
@@ -59,17 +61,21 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
         with open(cookie_file, "w") as f:
             f.write(cookies_content)
 
-    # List of client types to try to bypass bot detection
+    # List of client types and stealth settings to try
     clients_to_try = [
-        ['tv_embedded'],
-        ['ios'],
-        ['android'],
-        ['web'],
-        ['mweb']
+        {'client': ['tv_embedded'], 'ua': 'Mozilla/5.0 (SMART-TV; Linux; Tizen 5.0) AppleWebkit/537.36 (KHTML, like Gecko) SamsungBrowser/2.2 Chrome/63.0.3239.111 TV Safari/537.36'},
+        {'client': ['ios'], 'ua': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1'},
+        {'client': ['android'], 'ua': 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36'},
+        {'client': ['web_embedded'], 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'},
+        {'client': ['mweb'], 'ua': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36'}
     ]
     
     last_error = None
-    for client in clients_to_try:
+    for attempt, config in enumerate(clients_to_try):
+        # Stealth Jitter: Wait slightly before retrying to look less like a bot
+        if attempt > 0:
+            time.sleep(random.uniform(2.0, 5.0))
+
         ydl_opts = {
             'format': 'bestaudio/best',
             'outtmpl': output_template,
@@ -77,15 +83,23 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
             'quiet': True,
             'force_ipv4': True,
             'nocheckcertificate': True,
-            'extractor_args': {'youtube': {'player_client': client}},
+            'extractor_args': {'youtube': {'player_client': config['client']}},
+            'referer': 'https://www.youtube.com/',
+            'http_headers': {
+                'User-Agent': config['ua'],
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+            }
         }
         
         if cookie_file:
             ydl_opts['cookiefile'] = cookie_file
             
         try:
+            # print(f"DEBUG: Attempting stealth import {attempt+1} with {config['client']}...")
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(video_url, download=True)
+                # ... [Rest of logic follows if successful]
                 filename = ydl.prepare_filename(info)
                 
                 actual_filename = None
