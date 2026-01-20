@@ -10,8 +10,11 @@ RUN npm run build
 FROM python:3.10-slim
 WORKDIR /app
 
-# Install ffmpeg and nodejs (for specific yt-dlp JS challenges)
-RUN apt-get update && apt-get install -y ffmpeg nodejs && rm -rf /var/lib/apt/lists/*
+# Install ffmpeg and modern Node.js (v20) for yt-dlp signature solving
+RUN apt-get update && apt-get install -y ffmpeg curl && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy backend requirements and install
 COPY backend/requirements.txt ./
