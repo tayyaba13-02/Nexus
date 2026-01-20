@@ -56,6 +56,15 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
     # We use a temporary template to find the actual extension later
     output_template = f"{UPLOAD_DIR}/{file_id}.%(ext)s"
     
+    # Cookie Handling for Bot Evasion
+    # User can set YOUTUBE_COOKIES env var with content of cookies.txt
+    cookie_file = None
+    cookies_content = os.getenv("YOUTUBE_COOKIES")
+    if cookies_content:
+        cookie_file = "cookies.txt"
+        with open(cookie_file, "w") as f:
+            f.write(cookies_content)
+
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': output_template,
@@ -63,9 +72,12 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
         'quiet': True,
         'force_ipv4': True,
         'nocheckcertificate': True,
-        # Emulate iOS client which often bypasses "Sign in" checks better than Android/Web
-        'extractor_args': {'youtube': {'player_client': ['ios']}},
+        # 'tv_embedded' often bypasses bot checks for public videos
+        'extractor_args': {'youtube': {'player_client': ['tv_embedded']}},
     }
+    
+    if cookie_file:
+        ydl_opts['cookiefile'] = cookie_file
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
