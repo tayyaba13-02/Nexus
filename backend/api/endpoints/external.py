@@ -94,12 +94,19 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
             'force_ipv4': True,
             'nocheckcertificate': True,
             'rm_cachedir': True, # Clear cache for every attempt
-            'extractor_args': {'youtube': {'player_client': config['client']}},
+            'extractor_args': {
+                'youtube': {
+                    'player_client': config['client'],
+                    'remote_components': 'ejs:github' # Crucial for signature solving
+                }
+            },
+            'allow_unplayable_formats': True, # Fallback if signature solving is partial
             'referer': 'https://www.youtube.com/',
             'http_headers': {
                 'User-Agent': config['ua'],
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.5',
+                'Sec-Fetch-Mode': 'navigate',
             }
         }
         
@@ -140,10 +147,20 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
                 
         except Exception as e:
             last_error = e
-            print(f"DEBUG: Attempt {attempt+1} ({config['client']}) failed: {str(e)[:200]}")
-            # Continue to next client for ANY error
+            error_msg = str(e).lower()
+            print(f"DEBUG: Attempt {attempt+1} ({config['client']}) failed: {error_msg[:200]}")
+            
+            # If cookies are explicitly rejected, stop rotation and warn user
+            if "cookies are no longer valid" in error_msg or "rotated in the browser" in error_msg:
+                raise HTTPException(status_code=401, detail="YouTube has invalidated your cookies. Please re-export a fresh cookies.txt and update the YOUTUBE_COOKIES secret.")
+            
+            # Continue to next client for ANY other error
             continue
 
     # Final Failure Message
     error_msg = str(last_error) if last_error else "All download methods exhausted."
-    raise HTTPException(status_code=500, detail=f"Import blocked by YouTube: {error_msg}. Please ensure your YOUTUBE_COOKIES secret is up-to-date in Settings.")
+    user_hint = ""
+    if "requested format is not available" in str(error_msg).lower():
+        user_hint = " Your cookies might be expired or don't have enough permission for this specific video."
+    
+    raise HTTPException(status_code=500, detail=f"Import blocked by YouTube: {error_msg}.{user_hint} Check walkthrough.md.")
