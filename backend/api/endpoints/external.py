@@ -61,9 +61,10 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        # Avoid ffmpeg dependence for now, yt-dlp can get the actual format
-        # but we need to know the final file path
         'force_ipv4': True,
+        'nocheckcertificate': True,
+        # Emulate a real browser/client to avoid "Sign in to confirm"
+        'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
     }
     
     try:
