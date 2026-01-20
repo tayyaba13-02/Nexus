@@ -63,8 +63,8 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
         'quiet': True,
         'force_ipv4': True,
         'nocheckcertificate': True,
-        # Emulate a real browser/client to avoid "Sign in to confirm"
-        'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
+        # Emulate iOS client which often bypasses "Sign in" checks better than Android/Web
+        'extractor_args': {'youtube': {'player_client': ['ios']}},
     }
     
     try:

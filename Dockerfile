@@ -16,6 +16,8 @@ RUN apt-get update && apt-get install -y ffmpeg nodejs && rm -rf /var/lib/apt/li
 # Copy backend requirements and install
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
+# Explicitly upgrade yt-dlp to the latest version to fix bot detection
+RUN pip install --no-cache-dir -U yt-dlp
 
 # Copy backend code
 COPY backend/ ./
