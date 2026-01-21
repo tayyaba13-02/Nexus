@@ -152,7 +152,10 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
             
             # If cookies are explicitly rejected, stop rotation and warn user
             if "cookies are no longer valid" in error_msg or "rotated in the browser" in error_msg:
-                raise HTTPException(status_code=401, detail="YouTube has invalidated your cookies. Please re-export a fresh cookies.txt and update the YOUTUBE_COOKIES secret.")
+                raise HTTPException(
+                    status_code=401, 
+                    detail="YouTube cookies have expired or rotated. PLEASE: 1. Open YouTube in your browser. 2. Perform any search. 3. RE-EXPORT fresh cookies using 'Get cookies.txt LOCALLY' extension. 4. Update the YOUTUBE_COOKIES secret on Hugging Face."
+                )
             
             # Continue to next client for ANY other error
             continue

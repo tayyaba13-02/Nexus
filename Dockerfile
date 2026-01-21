@@ -14,7 +14,6 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y ffmpeg curl unzip git && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
-    [ -f /usr/bin/node ] || ln -s /usr/bin/nodejs /usr/bin/node || true && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Deno as an alternative JS runtime for yt-dlp
@@ -25,8 +24,8 @@ ENV PATH="$DENO_INSTALL/bin:$PATH"
 # Copy backend requirements and install
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-# Use the ABSOLUTE LATEST version of yt-dlp from GitHub to get latest anti-bot fixes
-RUN pip install --no-cache-dir -U git+https://github.com/yt-dlp/yt-dlp.git
+# ENSURE we have the absolute latest yt-dlp by uninstalling stable first
+RUN pip uninstall -y yt-dlp && pip install --no-cache-dir git+https://github.com/yt-dlp/yt-dlp.git
 
 # Copy backend code
 COPY backend/ ./
