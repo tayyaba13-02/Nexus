@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import Hero from '../components/Hero';
 import { Button } from '../components/ui/Button';
 import { usePlayerStore } from '../store/usePlayerStore';
-import { Upload, Music, Play, Pause, Heart, MoreHorizontal, Plus, ListMusic, Trash2 } from 'lucide-react';
+import { Upload, Music, Play, Pause, Heart, MoreHorizontal, Plus, ListMusic, Trash2, Download } from 'lucide-react';
+import InstallGuideModal from '../components/InstallGuideModal';
 import axios from 'axios';
 import PlaylistModal from '../components/PlaylistModal';
 import AddToPlaylistModal from '../components/AddToPlaylistModal';
@@ -11,8 +12,9 @@ import AddToPlaylistModal from '../components/AddToPlaylistModal';
 import { API_URL } from '../config';
 
 export default function Home() {
-    const { setCurrentSong, currentSong, isPlaying, togglePlay, songs, setSongs, likedSongs, toggleLike, currentMoodFilter } = usePlayerStore();
+    const { setCurrentSong, currentSong, isPlaying, togglePlay, songs, setSongs, likedSongs, toggleLike, currentMoodFilter, deferredPrompt } = usePlayerStore();
     const [isAddToPlaylistModalOpen, setIsAddToPlaylistModalOpen] = useState(false);
+    const [isInstallGuideOpen, setIsInstallGuideOpen] = useState(false);
     const [songToAdd, setSongToAdd] = useState(null);
 
     useEffect(() => {
@@ -37,6 +39,18 @@ export default function Home() {
             // If no songs, maybe scroll to uploads?
             const element = document.getElementById('recent-uploads');
             element?.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
+    const handleInstallClick = async () => {
+        if (!deferredPrompt) {
+            setIsInstallGuideOpen(true);
+            return;
+        }
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            usePlayerStore.getState().setDeferredPrompt(null);
         }
     };
 
@@ -107,6 +121,16 @@ export default function Home() {
                             <p className="text-emerald-100/60 text-sm md:text-base mb-8">
                                 {currentMoodFilter ? `Upload or import songs and tag them as ${currentMoodFilter}` : 'Upload your first song or import from YouTube'}
                             </p>
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                <Button
+                                    variant="outline"
+                                    className="rounded-full px-8 bg-[#268168]/10 border-[#268168]/20 text-[#268168] hover:bg-[#268168]/20"
+                                    onClick={handleInstallClick}
+                                >
+                                    <Download size={18} className="mr-2" />
+                                    Install on Phone
+                                </Button>
+                            </div>
                         </div>
                     ) : (
                         <div className="divide-y divide-[#268168]/5">
@@ -240,6 +264,10 @@ export default function Home() {
                 isOpen={isAddToPlaylistModalOpen}
                 onClose={() => setIsAddToPlaylistModalOpen(false)}
                 songToAdd={songToAdd}
+            />
+            <InstallGuideModal
+                isOpen={isInstallGuideOpen}
+                onClose={() => setIsInstallGuideOpen(false)}
             />
         </>
     );

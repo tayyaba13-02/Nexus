@@ -6,6 +6,7 @@ import { Upload, Music, Play, Heart, Plus, ListMusic, ChevronDown, ChevronUp, X,
 import axios from 'axios';
 import PlaylistModal from './PlaylistModal';
 import UploadModal from './UploadModal';
+import InstallGuideModal from './InstallGuideModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { API_URL } from '../config';
@@ -28,6 +29,7 @@ export default function Sidebar() {
     const fileInputRef = useRef(null);
     const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [isInstallGuideOpen, setIsInstallGuideOpen] = useState(false);
     const [showAll, setShowAll] = useState(false);
     const location = useLocation();
 
@@ -135,24 +137,17 @@ export default function Sidebar() {
                     Upload Song
                 </Button>
 
-                <AnimatePresence>
-                    {deferredPrompt && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 10 }}
-                        >
-                            <Button
-                                onClick={handleInstallClick}
-                                variant="outline"
-                                className="w-full justify-start border-[#268168]/20 text-[#268168] hover:bg-[#268168]/10"
-                            >
-                                <Download size={18} className="mr-2" />
-                                Install App
-                            </Button>
-                        </motion.div>
+                <Button
+                    onClick={deferredPrompt ? handleInstallClick : () => setIsInstallGuideOpen(true)}
+                    variant="outline"
+                    className="w-full justify-start border-[#268168]/20 text-[#268168] hover:bg-[#268168]/10 group relative overflow-hidden"
+                >
+                    <Download size={18} className="mr-2 group-hover:bounce transition-transform" />
+                    Install App
+                    {!deferredPrompt && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-[#268168] rounded-full animate-pulse" />
                     )}
-                </AnimatePresence>
+                </Button>
             </div>
 
             <div className="mt-8 pt-6 border-t border-[#268168]/10">
@@ -278,6 +273,10 @@ export default function Sidebar() {
             <UploadModal
                 isOpen={isUploadModalOpen}
                 onClose={() => setIsUploadModalOpen(false)}
+            />
+            <InstallGuideModal
+                isOpen={isInstallGuideOpen}
+                onClose={() => setIsInstallGuideOpen(false)}
             />
         </div>
     );
