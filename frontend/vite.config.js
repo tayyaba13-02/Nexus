@@ -14,6 +14,9 @@ export default defineConfig({
         short_name: 'Nexus',
         description: 'Premium Emerald Music Experience',
         theme_color: '#061914',
+        background_color: '#061914',
+        display: 'standalone',
+        start_url: '/',
         icons: [
           {
             src: 'icon.png',
