@@ -6,3 +6,8 @@ youtube-search-python
 mutagen
 pydantic
 pydantic-settings
+beanie
+motor
+dnspython
+requests
+ytmusicapi
