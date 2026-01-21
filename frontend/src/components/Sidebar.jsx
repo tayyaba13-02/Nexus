@@ -99,7 +99,19 @@ export default function Sidebar() {
     };
 
     const handleInstallClick = async () => {
-        if (!deferredPrompt) return;
+        const isIframe = window.self !== window.top;
+        if (isIframe) {
+            const directUrl = `https://${window.location.hostname.replace('.hf.space', '')}.hf.space`;
+            if (confirm("Automatic installation doesn't work inside the Hugging Face wrapper. Would you like to open the direct link to install?")) {
+                window.top.location.href = window.location.href;
+            }
+            return;
+        }
+
+        if (!deferredPrompt) {
+            setIsInstallGuideOpen(true);
+            return;
+        }
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
         if (outcome === 'accepted') {

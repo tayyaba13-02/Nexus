@@ -43,6 +43,14 @@ export default function Home() {
     };
 
     const handleInstallClick = async () => {
+        const isIframe = window.self !== window.top;
+        if (isIframe) {
+            if (confirm("Automatic installation doesn't work inside the Hugging Face wrapper. Would you like to open the direct link to install?")) {
+                window.top.location.href = window.location.href;
+            }
+            return;
+        }
+
         if (!deferredPrompt) {
             setIsInstallGuideOpen(true);
             return;
