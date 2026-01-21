@@ -94,10 +94,10 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
             'force_ipv4': True,
             'nocheckcertificate': True,
             'rm_cachedir': True, # Clear cache for every attempt
+            'remote_components': ['ejs:github'], # Crucial: moved to top level
             'extractor_args': {
                 'youtube': {
                     'player_client': config['client'],
-                    'remote_components': 'ejs:github' # Crucial for signature solving
                 }
             },
             'allow_unplayable_formats': True, # Fallback if signature solving is partial

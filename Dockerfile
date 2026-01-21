@@ -14,6 +14,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y ffmpeg curl unzip git && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
+    ln -s /usr/bin/nodejs /usr/bin/node && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Deno as an alternative JS runtime for yt-dlp
