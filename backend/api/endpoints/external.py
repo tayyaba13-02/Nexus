@@ -149,10 +149,19 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
             print(f"DEBUG: Attempt {attempt+1} ({config['client']}) failed: {error_msg}")
             
             # Special markers for bot detection and cookie issues
-            bot_markers = ["sign in to confirm you’re not a bot", "bot detection", "confirm you're human"]
-            cookie_markers = ["cookies are no longer valid", "rotated in the browser", "sign in to confirm you are not a bot"]
+            # We handle both straight (') and curly (’) quotes as both appear in different YouTube clients
+            error_markers = [
+                "sign in to confirm you're not a bot", 
+                "sign in to confirm you’re not a bot",
+                "bot detection", 
+                "confirm you're human",
+                "confirm you’re human",
+                "cookies are no longer valid", 
+                "rotated in the browser"
+            ]
             
-            if any(marker in error_msg for marker in cookie_markers):
+            if any(marker in error_msg for marker in error_markers):
+                # If we're hit with anything that suggests login/bot, we return 401 with instructions
                 raise HTTPException(
                     status_code=401, 
                     detail="Import blocked: YouTube requested login OR cookies expired. Action Required: Provide fresh cookies from a real browser session. See walkthrough.md for instructions."
