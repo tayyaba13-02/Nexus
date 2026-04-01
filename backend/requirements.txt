@@ -6,8 +6,9 @@ youtube-search-python
 mutagen
 pydantic
 pydantic-settings
-beanie
-motor
+beanie==1.25.0
+motor==3.3.1
+pymongo==4.5.0
 dnspython
 requests
 ytmusicapi
