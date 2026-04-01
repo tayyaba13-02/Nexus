@@ -93,7 +93,7 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
             'force_ipv4': True,
             'nocheckcertificate': True,
             'rm_cachedir': True,
-            'remote_components': 'ejs:github',
+            'remote_components': ['ejs:github'],
             'extractor_args': {
                 'youtube': {
                     'player_client': config['client'],
