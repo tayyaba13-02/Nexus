@@ -63,26 +63,25 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
 
     # List of client types and stealth settings to try
     # Expanded list to cover every possible fallback
+    # Comprehensive client rotation for cloud environments
     if cookie_file:
         clients_to_try = [
-            {'client': ['web'], 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'},
+            {'client': ['android'], 'ua': 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36'},
             {'client': ['mweb'], 'ua': 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36'},
-            {'client': ['tv_embedded'], 'ua': 'Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0) AppleWebkit/537.36 (KHTML, like Gecko) SamsungBrowser/4.0 Chrome/88.0.4324.182 TV Safari/537.36'},
-            {'client': ['android_music'], 'ua': 'com.google.android.apps.youtube.music/6.41.52 (Linux; U; Android 14; en_US; Pixel 8 Pro; Build/UQ1A.240205.004)'}
+            {'client': ['ios'], 'ua': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'},
+            {'client': ['web'], 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'}
         ]
     else:
         clients_to_try = [
-            {'client': ['tv_embedded'], 'ua': 'Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0) AppleWebkit/537.36 (KHTML, like Gecko) SamsungBrowser/4.0 Chrome/88.0.4324.182 TV Safari/537.36'},
-            {'client': ['android_music'], 'ua': 'com.google.android.apps.youtube.music/6.41.52 (Linux; U; Android 14; en_US; Pixel 8 Pro; Build/UQ1A.240205.004)'},
-            {'client': ['ios'], 'ua': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'},
             {'client': ['android'], 'ua': 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36'},
-            {'client': ['web_embedded'], 'ua': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'}
+            {'client': ['ios'], 'ua': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'},
+            {'client': ['tv_embedded'], 'ua': 'Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0) AppleWebkit/537.36 (KHTML, like Gecko) SamsungBrowser/4.0 Chrome/88.0.4324.182 TV Safari/537.36'},
+            {'client': ['android_music'], 'ua': 'com.google.android.apps.youtube.music/6.41.52 (Linux; U; Android 14; en_US; Pixel 8 Pro; Build/UQ1A.240205.004)'}
         ]
     
     last_error = None
     for attempt, config in enumerate(clients_to_try):
         if attempt > 0:
-            # Random jitter to prevent IP ban
             time.sleep(random.uniform(3.0, 7.0))
 
         ydl_opts = {
@@ -90,23 +89,23 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
             'outtmpl': output_template,
             'noplaylist': True,
             'quiet': True,
-            'verbose': True, # Add logs for cleaner debugging in HF Space
+            'verbose': True,
             'force_ipv4': True,
             'nocheckcertificate': True,
-            'rm_cachedir': True, # Clear cache for every attempt
-            'remote_components': ['ejs:github'], # Crucial: moved to top level
+            'rm_cachedir': True,
             'extractor_args': {
                 'youtube': {
                     'player_client': config['client'],
+                    # Use Deno (installed in Dockerfile) to solve player challenges (PO Token)
+                    'player_skip': ['web_safari', 'web_embedded_player_es6'],
                 }
             },
-            'allow_unplayable_formats': True, # Fallback if signature solving is partial
+            'allow_unplayable_formats': True,
             'referer': 'https://www.youtube.com/',
             'http_headers': {
                 'User-Agent': config['ua'],
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.5',
-                'Sec-Fetch-Mode': 'navigate',
             }
         }
         
@@ -115,7 +114,6 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
             
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                # We use extract_info directly with download=True
                 info = ydl.extract_info(video_url, download=True)
                 
                 actual_filename = None
@@ -148,16 +146,18 @@ async def import_from_youtube(video_url: str, x_user_id: Optional[str] = Header(
         except Exception as e:
             last_error = e
             error_msg = str(e).lower()
-            print(f"DEBUG: Attempt {attempt+1} ({config['client']}) failed: {error_msg[:200]}")
+            print(f"DEBUG: Attempt {attempt+1} ({config['client']}) failed: {error_msg}")
             
-            # If cookies are explicitly rejected, stop rotation and warn user
-            if "cookies are no longer valid" in error_msg or "rotated in the browser" in error_msg:
+            # Special markers for bot detection and cookie issues
+            bot_markers = ["sign in to confirm you’re not a bot", "bot detection", "confirm you're human"]
+            cookie_markers = ["cookies are no longer valid", "rotated in the browser", "sign in to confirm you are not a bot"]
+            
+            if any(marker in error_msg for marker in cookie_markers):
                 raise HTTPException(
                     status_code=401, 
-                    detail="YouTube cookies have expired or rotated. PLEASE: 1. Open YouTube in your browser. 2. Perform any search. 3. RE-EXPORT fresh cookies using 'Get cookies.txt LOCALLY' extension. 4. Update the YOUTUBE_COOKIES secret on Hugging Face."
+                    detail="Import blocked: YouTube requested login OR cookies expired. Action Required: Provide fresh cookies from a real browser session. See walkthrough.md for instructions."
                 )
             
-            # Continue to next client for ANY other error
             continue
 
     # Final Failure Message
